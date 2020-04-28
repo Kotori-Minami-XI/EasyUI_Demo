@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="./easyui/uimaker/easyui.css">
+    <link rel="stylesheet" type="text/css" href="./easyui/uimaker/icon.css">
+    <script type="text/javascript" src="./easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="./easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="./easyui/easyui-lang-zh_CN.js"></script>
+</head>
+<body>
+
+<table id="myDataGrid"></table>
+
+<div id="myToolbar">
+    <a id="btn_add" href="#" class="easyui-linkbutton" data-options="iconCls:'icon-add'" >添加</a>
+    <a id="btn_edit" href="#" class="easyui-linkbutton" data-options="iconCls:'icon-edit'">编辑</a>
+    <a id="btn_delete" href="#" class="easyui-linkbutton" data-options="iconCls:'icon-remove'">删除</a>
+    <a id="btn_refresh" href="#" class="easyui-linkbutton" data-options="iconCls:'icon-reload'">刷新</a>
+</div>
+
+<!--隐藏的input标签来区分是add还是update-->
+<input type="hidden" id="behavior_flag">
+
+<div id="myDialog">
+    <form id="myForm">
+        <table align="center" style="border-spacing: 0px 10px">
+            <tr>
+                <td>姓名</td>
+                <td><input name="name" type="text" class="easyui-validatebox" data-options="required:true"></td>
+            </tr>
+            <tr>
+                <td>入职日期</td>
+                <td><input name="date" type="text" class="easyui-datebox" data-options="required:true"></td>
+            </tr>
+            <tr>
+                <td>邮箱</td>
+                <td><input name="email" type="text" class="easyui-validatebox" data-options="required:true,validType:'email'"></td>
+            </tr>
+            <tr>
+                <td>部门</td>
+                <td><input name="department.id" class="easyui-combobox" id="department_combobox"></td>
+            </tr>
+            <tr>
+                <td>状态</td>
+                <td><input name="state" class="easyui-combobox" id="state_combobox"></td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+<script>
+    $(function () {
+        $('#department_combobox').combobox({
+            url:'depart.json',
+            valueField:'id',
+            textField:'name',
+            panelHeight:'auto',
+            editable: false
+        });
+
+        $('#state_combobox').combobox({
+            data: [{
+                label: '在职',
+                value: 'true'
+            }, {
+                label: '离职',
+                value: 'false'
+            }],
+            valueField:'value',
+            textField:'label',
+            panelHeight:'auto',
+            editable: false
+        });
+
+        $('#myDataGrid').datagrid({
+            url: 'datagrid_data.json',
+            fit: true,
+            fitColumns: true,
+            rownumbers: true,
+            toolbar: '#myToolbar',
+            singleSelect: true,
+            pagination:true,
+            columns:[[
+                {field:'name',title:'姓名',width:100,align:'center'},
+                {field:'date',title:'入职日期',width:100,align:'center'},
+                {field:'email',title:'邮件地址',width:100,align:'center'},
+                {field:'department',title:'部门',width:100,align:'center', formatter: function (value,row,index) {
+                    if (row.department.name) {
+                        return row.department.name;
+                    }
+                }},
+                {field:'state',title:'状态',width:100,align:'center',formatter: function (value,row,index) {
+                    if (row.state) {
+                        return "在职";
+                    } else {
+                        return '<p style="color: red">离职</p>';
+                    }
+                }}
+            ]]
+        });
+
+        $('#myDialog').dialog({
+            width:300,
+            height:300,
+            draggable: false,
+            modal: true,
+            closable:true,
+            closed: true,
+            buttons:[{
+                text:'保存',
+                iconCls: 'icon-save',
+                handler:function(){
+                    // 根据form中的隐藏input标签判断是哪个请求，实现窗口复用
+                    var behavior = $("#behavior_flag").val();
+                    // alert(behavior);
+                    var url;
+                    if (behavior == 'add') { //add请求
+                        url = 'save.json';
+                    } else if (behavior == 'edit') {
+                        url = 'update.json'; //edit请求
+                    }
+
+                    $('#myForm').form('submit',{
+                        url: url,
+                        success:function (data) {
+                            /*解析成json*/
+                            data = $.parseJSON(data);
+                            if(data.success){
+                                $.messager.alert("温馨提示",data.msg);
+                                $("#myDataGrid").datagrid("reload");
+                                $("#myDialog").dialog("close");
+                                console.log(data);
+                            }else {
+                                $.messager.alert("温馨提示",data.msg);
+                            }
+                        }
+                    });
+                }
+            },{
+                text:'关闭',
+                iconCls: 'icon-cancel',
+                handler:function(){
+                    $('#myDialog').dialog('close');
+                }
+            }],
+        });
+
+        $('#btn_add').click(function () {
+            $('#myForm').form('clear');
+            $('#myDialog').dialog('open');
+            $('#myDialog').dialog('setTitle','添加员工');
+
+            $("#behavior_flag").val('add');
+        });
+
+        $('#btn_edit').click(function () {
+            $("#behavior_flag").val('edit');
+
+            var selectedRowData = $('#myDataGrid').datagrid('getSelected');
+            if (!selectedRowData) {
+                $.messager.alert("温馨提示","请选中一条数据");
+            } else {
+                $('#myForm').form('clear');
+                $('#myDialog').dialog('open');
+                $('#myDialog').dialog('setTitle','编辑员工');
+
+                // 填充新的字段便于回显
+                selectedRowData['department.id'] = selectedRowData['department'].id;
+                selectedRowData['state'] = selectedRowData['state'].toString();
+
+                // 数据回显 同名匹配原则
+                $('#myForm').form('load', selectedRowData);
+            }
+        });
+
+    });
+
+</script>
+</body>
+</html>

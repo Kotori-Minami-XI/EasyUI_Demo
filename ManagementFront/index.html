@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="./easyui/uimaker/easyui.css">
+    <link rel="stylesheet" type="text/css" href="./easyui/uimaker/icon.css">
+    <script type="text/javascript" src="./easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="./easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="./easyui/easyui-lang-zh_CN.js"></script>
+</head>
+
+<body class="easyui-layout">
+
+<!-- 头部 -->
+<div data-options="region:'north',split:false" style="height:100px;background-color: #ff8227;padding: 20px 20px">
+    <img src="./main_logo.png" alt="">
+</div>
+
+<!-- 底部 -->
+<div data-options="region:'south',split:true" style="height:100px; border-bottom: #ff8227 solid 3px">
+    <p style="text-align: center;font-size: 16px">管理系统</p>
+
+</div>
+
+<!-- 左侧 -->
+<div data-options="region:'west',split:true" style="width:300px;">
+    <div id="myAccordion" class="easyui-accordion" data-options="fit:true">
+        <div title="菜单" data-options="iconCls:'icon-save', selected:true" style="overflow:auto;padding:10px;">
+            <ul id="myTree"></ul>
+        </div>
+    </div>
+</div>
+
+<!-- 中部 -->
+<div data-options="region:'center',title:'center title'" style="padding:5px;background:#eee;">
+    <div id="myTab">
+
+    </div>
+</div>
+
+</body>
+
+</html>
+
+
+<script type="text/javascript">
+    $(function () {
+        $('#myTree').tree({
+            url: 'tree.json',
+            lines: true,
+            onClick: function (node) {
+                if ($('#myTab').tabs('exists', node.text)) {
+                    $('#myTab').tabs('select', node.text);
+                } else {
+                    $('#myTab').tabs('add', {
+                        title: node.text,
+                        content: "<iframe frameborder='0' width='100%' height='100%' src=" + node.attributes.url + "></iframe>",
+                        closable: true
+                    });
+                }
+            }
+        });
+
+        $('#myTab').tabs({
+            fit: true
+        });
+
+
+    });
+</script>
